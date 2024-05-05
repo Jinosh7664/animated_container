@@ -4,18 +4,105 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: Scaffold(body: GradientBox()),
+      home: Scaffold(
+        body: GradientBox(),
+      ),
+    );
+  }
+}
+
+class ShaderExample extends StatefulWidget {
+  const ShaderExample({super.key});
+
+  @override
+  State<ShaderExample> createState() => _ShaderExampleState();
+}
+
+class _ShaderExampleState extends State<ShaderExample>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<int> _animation;
+  var staticColor = [
+    const Color(0xFF205639),
+    const Color(0xFF46BC7D),
+    const Color(0xFF205639),
+  ];
+
+  final stops = [
+    0.0811,
+    0.4446,
+    0.8914,
+  ];
+  var color = <Color>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    );
+    _animation = IntTween(begin: 0, end: 15).animate(_controller)
+      ..addListener(() {
+        setState(() {});
+      });
+    _controller.repeat(reverse: true);
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _set();
+    });
+  }
+
+  void _set() {
+    setState(() {
+      color = interpolateColors(
+        staticColor,
+        stops,
+        15,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (color.length < 15) {
+      return const SizedBox();
+    }
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (BuildContext context, Widget? child) {
+        var cl1 = [
+          color.last,
+          ...color.sublist(
+            0,
+            color.length - 1,
+          )
+        ];
+        color = cl1;
+        return ShaderMask(
+          child: const Text(
+            "Hello World",
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 30,
+              color: Colors.grey,
+            ),
+          ),
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              colors: color,
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              tileMode: TileMode.decal,
+            ).createShader(bounds);
+          },
+        );
+      },
     );
   }
 }
@@ -81,6 +168,7 @@ class _GradientBoxState extends State<GradientBox>
         ];
         color = cl1;
         return Container(
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: color,
@@ -88,6 +176,7 @@ class _GradientBoxState extends State<GradientBox>
               end: Alignment.bottomRight,
             ),
           ),
+          child: const ShaderExample(),
         );
       },
     );
